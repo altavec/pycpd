@@ -94,7 +94,7 @@ class DeformableRegistration(EMRegistration):
 
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
-        self.W = torch.zeros((self.M, self.D), dtype=self.X.dtype)
+        self.W = torch.zeros((self.M, self.D), dtype=self.X.dtype, device=self.X.device)
         self.G = gaussian_kernel(self.Y, self.beta)
         self.low_rank = low_rank
         self.num_eig = num_eig
@@ -112,7 +112,7 @@ class DeformableRegistration(EMRegistration):
         """
         if self.low_rank is False:
             A = torch.matmul(torch.diag(self.P1), self.G) + \
-                self.alpha * self.sigma2 * torch.eye(self.M)
+                self.alpha * self.sigma2 * torch.eye(self.M, dtype=self.X.dtype, device=self.X.device)
             B = self.PX - torch.matmul(torch.diag(self.P1), self.Y)
             self.W = torch.linalg.solve(A, B)
 

@@ -167,20 +167,20 @@ class EMRegistration(object):
         self.X = X
         self.Y = Y
         self.TY = Y
-        self.sigma2 = initialize_sigma2(X, Y) if sigma2 is None else torch.tensor(sigma2, dtype=self.X.dtype)
+        self.sigma2 = initialize_sigma2(X, Y) if sigma2 is None else torch.tensor(sigma2, dtype=self.X.dtype, device=self.X.device)
         (self.N, self.D) = self.X.shape
         (self.M, _) = self.Y.shape
-        self.tolerance = torch.tensor(0.001 if tolerance is None else tolerance, dtype=self.X.dtype)
-        self.w = torch.tensor(0.0 if w is None else w, dtype=self.X.dtype)
+        self.tolerance = torch.tensor(0.001 if tolerance is None else tolerance, dtype=self.X.dtype, device=self.X.device)
+        self.w = torch.tensor(0.0 if w is None else w, dtype=self.X.dtype, device=self.X.device)
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
         self.diff = torch.inf
         self.q = torch.inf
-        self.P = torch.zeros((self.M, self.N), dtype=self.X.dtype)
-        self.Pt1 = torch.zeros((self.N, ), dtype=self.X.dtype)
-        self.P1 = torch.zeros((self.M, ), dtype=self.X.dtype)
-        self.PX = torch.zeros((self.M, self.D), dtype=self.X.dtype)
-        self.Np = torch.tensor(0, dtype=self.X.dtype)
+        self.P = torch.zeros((self.M, self.N), dtype=self.X.dtype, device=self.X.device)
+        self.Pt1 = torch.zeros((self.N, ), dtype=self.X.dtype, device=self.X.device)
+        self.P1 = torch.zeros((self.M, ), dtype=self.X.dtype, device=self.X.device)
+        self.PX = torch.zeros((self.M, self.D), dtype=self.X.dtype, device=self.X.device)
+        self.Np = torch.tensor(0, dtype=self.X.dtype, device=self.X.device)
 
     def register(self, callback=lambda **kwargs: None):
         """

@@ -34,8 +34,8 @@ class AffineRegistration(EMRegistration):
         if t is not None and ((t.ndim != 2) or (t.shape[0] != 1) or (t.shape[1] != self.D)):
             raise ValueError(
                 'The translation vector can only be initialized to 1x{} positive semi definite matrices. Instead got: {}.'.format(self.D, t))
-        self.B = torch.eye(self.D, dtype=self.X.dtype) if B is None else B
-        self.t = torch.atleast_2d(torch.zeros((1, self.D), dtype=self.X.dtype)) if t is None else t
+        self.B = torch.eye(self.D, dtype=self.X.dtype, device=self.X.device) if B is None else B
+        self.t = torch.atleast_2d(torch.zeros((1, self.D), dtype=self.X.dtype, device=self.X.device)) if t is None else t
 
         self.YPY = None
         self.X_hat = None

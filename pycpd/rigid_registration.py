@@ -54,10 +54,10 @@ class RigidRegistration(EMRegistration):
             raise ValueError(
                 'The scale factor must be a positive number. Instead got: {}.'.format(s))
 
-        self.R = torch.eye(self.D, dtype=self.X.dtype) if R is None else R
-        self.t = torch.atleast_2d(torch.zeros((1, self.D), dtype=self.X.dtype)) if t is None else t
-        self.s = torch.tensor(1 if s is None else s, dtype=self.X.dtype)
-        self.scale = torch.tensor(scale, dtype=self.X.dtype)
+        self.R = torch.eye(self.D, dtype=self.X.dtype, device=self.X.device) if R is None else R
+        self.t = torch.atleast_2d(torch.zeros((1, self.D), dtype=self.X.dtype, device=self.X.device)) if t is None else t
+        self.s = torch.tensor(1 if s is None else s, dtype=self.X.dtype, device=self.X.device)
+        self.scale = torch.tensor(scale, dtype=self.X.dtype, device=self.X.device)
 
     def update_transform(self):
         """
@@ -83,7 +83,7 @@ class RigidRegistration(EMRegistration):
 
         # Singular value decomposition as per lemma 1 of https://arxiv.org/pdf/0905.2635.pdf.
         U, _, V = torch.linalg.svd(self.A, full_matrices=True)
-        C = torch.ones((self.D, ), dtype=self.X.dtype)
+        C = torch.ones((self.D, ), dtype=self.X.dtype, device=self.X.device)
         C[self.D-1] = torch.linalg.det(torch.matmul(U, V))
 
         # Calculate the rotation matrix using Eq. 9 of https://arxiv.org/pdf/0905.2635.pdf.

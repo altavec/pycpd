@@ -1,7 +1,7 @@
 import pytest
 import torch
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_array_almost_equal
+from torch.testing import assert_close
 from pycpd import AffineRegistration
 
 
@@ -14,9 +14,9 @@ def test_2D():
 
     reg = AffineRegistration(**{'X': X, 'Y': Y})
     TY, (B_reg, t_reg) = reg.register()
-    assert_array_almost_equal(B, B_reg)
-    assert_array_almost_equal(t, t_reg)
-    assert_array_almost_equal(X, TY)
+    assert_close(B, B_reg)
+    assert_close(t, t_reg)
+    assert_close(X, TY)
 
 
 def test_3D():
@@ -34,6 +34,6 @@ def test_3D():
 
     reg = AffineRegistration(**{'X': X, 'Y': Y})
     TY, (B_reg, t_reg) = reg.register()
-    assert_array_almost_equal(B, B_reg)
-    assert_array_almost_equal(t, t_reg)
-    assert_array_almost_equal(X, TY)
+    assert_close(B, B_reg)
+    assert_close(t, t_reg)
+    assert_close(X, TY)
