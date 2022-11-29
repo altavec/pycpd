@@ -1,5 +1,5 @@
 from builtins import super
-import numpy as np
+import torch
 import numbers
 from .emregistration import EMRegistration
 
@@ -12,15 +12,15 @@ def gaussian_kernel(X, beta, Y=None):
     ----------
     X: numpy array
         NxD array of points for creating gaussian.
-    
+
     beta: float
         Width of the Gaussian kernel.
-    
+
     Y: numpy array, optional
         MxD array of secondary points to calculate
         kernel with. Used if predicting on points
         not used to train.
-        
+
     Returns
     -------
     K: numpy array
@@ -31,9 +31,9 @@ def gaussian_kernel(X, beta, Y=None):
     if Y is None:
         Y = X
     diff = X[:, None, :] - Y[None, :,  :]
-    diff = np.square(diff)
-    diff = np.sum(diff, 2)
-    return np.exp(-diff / (2 * beta**2))
+    diff = torch.square(diff)
+    diff = torch.sum(diff, 2)
+    return torch.exp(-diff / (2 * beta**2))
 
 def low_rank_eigen(G, num_eig):
     """
@@ -44,20 +44,20 @@ def low_rank_eigen(G, num_eig):
     ----------
     G: numpy array
         Gaussian kernel matrix.
-    
+
     num_eig: int
-        Number of eigenvectors to use in lowrank calculation. 
-    
+        Number of eigenvectors to use in lowrank calculation.
+
     Returns
     -------
     Q: numpy array
         D x num_eig array of eigenvectors.
-    
+
     S: numpy array
         num_eig array of eigenvalues.
     """
-    S, Q = np.linalg.eigh(G)
-    eig_indices = list(np.argsort(np.abs(S))[::-1][:num_eig])
+    S, Q = torch.linalg.eigh(G)
+    eig_indices = list(torch.argsort(torch.abs(S))[::-1][:num_eig])
     Q = Q[:, eig_indices]  # eigenvectors
     S = S[eig_indices]  # eigenvalues.
     return Q, S
@@ -74,10 +74,10 @@ class DeformableRegistration(EMRegistration):
 
     beta: float(positive)
         Width of the Gaussian kernel.
-    
+
     low_rank: bool
         Whether to use low rank approximation.
-    
+
     num_eig: int
         Number of eigenvectors to use in lowrank calculation.
     """
@@ -94,14 +94,14 @@ class DeformableRegistration(EMRegistration):
 
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
-        self.W = np.zeros((self.M, self.D))
+        self.W = torch.zeros((self.M, self.D), dtype=self.X.dtype)
         self.G = gaussian_kernel(self.Y, self.beta)
         self.low_rank = low_rank
         self.num_eig = num_eig
         if self.low_rank is True:
             self.Q, self.S = low_rank_eigen(self.G, self.num_eig)
-            self.inv_S = np.diag(1./self.S)
-            self.S = np.diag(self.S)
+            self.inv_S = torch.diag(1./self.S)
+            self.S = torch.diag(self.S)
             self.E = 0.
 
     def update_transform(self):
@@ -111,23 +111,23 @@ class DeformableRegistration(EMRegistration):
 
         """
         if self.low_rank is False:
-            A = np.dot(np.diag(self.P1), self.G) + \
-                self.alpha * self.sigma2 * np.eye(self.M)
-            B = self.PX - np.dot(np.diag(self.P1), self.Y)
-            self.W = np.linalg.solve(A, B)
+            A = torch.matmul(torch.diag(self.P1), self.G) + \
+                self.alpha * self.sigma2 * torch.eye(self.M)
+            B = self.PX - torch.matmul(torch.diag(self.P1), self.Y)
+            self.W = torch.linalg.solve(A, B)
 
         elif self.low_rank is True:
             # Matlab code equivalent can be found here:
             # https://github.com/markeroon/matlab-computer-vision-routines/tree/master/third_party/CoherentPointDrift
-            dP = np.diag(self.P1)
-            dPQ = np.matmul(dP, self.Q)
-            F = self.PX - np.matmul(dP, self.Y)
+            dP = torch.diag(self.P1)
+            dPQ = torch.matmul(dP, self.Q)
+            F = self.PX - torch.matmul(dP, self.Y)
 
-            self.W = 1 / (self.alpha * self.sigma2) * (F - np.matmul(dPQ, (
-                np.linalg.solve((self.alpha * self.sigma2 * self.inv_S + np.matmul(self.Q.T, dPQ)),
-                                (np.matmul(self.Q.T, F))))))
-            QtW = np.matmul(self.Q.T, self.W)
-            self.E = self.E + self.alpha / 2 * np.trace(np.matmul(QtW.T, np.matmul(self.S, QtW)))
+            self.W = 1 / (self.alpha * self.sigma2) * (F - torch.matmul(dPQ, (
+                torch.linalg.solve((self.alpha * self.sigma2 * self.inv_S + torch.matmul(torch.t(self.Q), dPQ)),
+                                (torch.matmul(torch.t(self.Q), F))))))
+            QtW = torch.matmul(torch.t(self.Q), self.W)
+            self.E = self.E + self.alpha / 2 * torch.trace(torch.matmul(torch.t(QtW), torch.matmul(self.S, QtW)))
 
     def transform_point_cloud(self, Y=None):
         """
@@ -139,23 +139,23 @@ class DeformableRegistration(EMRegistration):
             Array of points to transform - use to predict on new set of points.
             Best for predicting on new points not used to run initial registration.
                 If None, self.Y used.
-        
+
         Returns
         -------
         If Y is None, returns None.
         Otherwise, returns the transformed Y.
-                
+
 
         """
         if Y is not None:
             G = gaussian_kernel(X=Y, beta=self.beta, Y=self.Y)
-            return Y + np.dot(G, self.W)
+            return Y + torch.matmul(G, self.W)
         else:
             if self.low_rank is False:
-                self.TY = self.Y + np.dot(self.G, self.W)
+                self.TY = self.Y + torch.matmul(self.G, self.W)
 
             elif self.low_rank is True:
-                self.TY = self.Y + np.matmul(self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W)))
+                self.TY = self.Y + torch.matmul(self.Q, torch.matmul(self.S, torch.matmul(torch.t(self.Q), self.W)))
                 return
 
 
@@ -170,13 +170,13 @@ class DeformableRegistration(EMRegistration):
         # The original CPD paper does not explicitly calculate the objective functional.
         # This functional will include terms from both the negative log-likelihood and
         # the Gaussian kernel used for regularization.
-        self.q = np.inf
+        self.q = torch.inf
 
-        xPx = np.dot(np.transpose(self.Pt1), np.sum(
-            np.multiply(self.X, self.X), axis=1))
-        yPy = np.dot(np.transpose(self.P1),  np.sum(
-            np.multiply(self.TY, self.TY), axis=1))
-        trPXY = np.sum(np.multiply(self.TY, self.PX))
+        xPx = torch.matmul(torch.t(self.Pt1), torch.sum(
+            torch.multiply(self.X, self.X), dim=1))
+        yPy = torch.matmul(torch.t(self.P1),  torch.sum(
+            torch.multiply(self.TY, self.TY), dim=1))
+        trPXY = torch.sum(torch.multiply(self.TY, self.PX))
 
         self.sigma2 = (xPx - 2 * trPXY + yPy) / (self.Np * self.D)
 
@@ -185,7 +185,7 @@ class DeformableRegistration(EMRegistration):
 
         # Here we use the difference between the current and previous
         # estimate of the variance as a proxy to test for convergence.
-        self.diff = np.abs(self.sigma2 - qprev)
+        self.diff = torch.abs(self.sigma2 - qprev)
 
     def get_registration_parameters(self):
         """
