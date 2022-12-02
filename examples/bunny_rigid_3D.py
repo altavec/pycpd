@@ -2,6 +2,7 @@ import argparse
 from functools import partial
 import matplotlib.pyplot as plt
 from pytorchcpd import RigidRegistration
+import torch
 import numpy as np
 import os
 
@@ -26,9 +27,9 @@ def visualize(iteration, error, X, Y, ax, fig, save_fig=False):
 
 def main(save=False):
     print(save)
-    X = np.loadtxt('data/bunny_target.txt')
+    X = torch.from_numpy(np.loadtxt('data/bunny_target.txt'))
     # synthetic data, equaivalent to X + 1
-    Y = np.loadtxt('data/bunny_source.txt')
+    Y = torch.from_numpy(np.loadtxt('data/bunny_source.txt'))
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

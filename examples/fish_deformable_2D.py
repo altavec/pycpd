@@ -1,6 +1,7 @@
 from functools import partial
 import matplotlib.pyplot as plt
 from pytorchcpd import DeformableRegistration
+import torch
 import numpy as np
 import time
 
@@ -17,8 +18,8 @@ def visualize(iteration, error, X, Y, ax):
 
 
 def main():
-    X = np.loadtxt('data/fish_target.txt')
-    Y = np.loadtxt('data/fish_source.txt')
+    X = torch.from_numpy(np.loadtxt('data/fish_target.txt'))
+    Y = torch.from_numpy(np.loadtxt('data/fish_source.txt'))
 
     fig = plt.figure()
     fig.add_axes([0, 0, 1, 1])

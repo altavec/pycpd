@@ -2,6 +2,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from pytorchcpd import RigidRegistration
+import torch
 import numpy as np
 
 
@@ -17,25 +18,25 @@ def visualize(iteration, error, X, Y, ax):
 
 
 def main(true_rigid=True):
-    fish_target = np.loadtxt('data/fish_target.txt')
-    X1 = np.zeros((fish_target.shape[0], fish_target.shape[1] + 1))
+    fish_target = torch.from_numpy(np.loadtxt('data/fish_target.txt'))
+    X1 = torch.zeros((fish_target.shape[0], fish_target.shape[1] + 1), dtype=torch.float64)
     X1[:, :-1] = fish_target
-    X2 = np.ones((fish_target.shape[0], fish_target.shape[1] + 1))
+    X2 = torch.ones((fish_target.shape[0], fish_target.shape[1] + 1), dtype=torch.float64)
     X2[:, :-1] = fish_target
-    X = np.vstack((X1, X2))
+    X = torch.vstack((X1, X2))
 
     if true_rigid is True:
-        theta = np.pi / 6.0
-        R = np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
-        t = np.array([0.5, 1.0, 0.0])
-        Y = np.dot(X, R) + t
+        theta = torch.tensor(torch.pi / 6.0, dtype=torch.float64)
+        R = torch.tensor([[torch.cos(theta), -torch.sin(theta), 0], [torch.sin(theta), torch.cos(theta), 0], [0, 0, 1]])
+        t = torch.tensor([0.5, 1.0, 0.0])
+        Y = torch.matmul(X, R) + t
     else:
-        fish_source = np.loadtxt('data/fish_source.txt')
-        Y1 = np.zeros((fish_source.shape[0], fish_source.shape[1] + 1))
+        fish_source = torch.from_numpy(np.loadtxt('data/fish_source.txt'))
+        Y1 = torch.zeros((fish_source.shape[0], fish_source.shape[1] + 1))
         Y1[:, :-1] = fish_source
-        Y2 = np.ones((fish_source.shape[0], fish_source.shape[1] + 1))
+        Y2 = torch.ones((fish_source.shape[0], fish_source.shape[1] + 1))
         Y2[:, :-1] = fish_source
-        Y = np.vstack((Y1, Y2))
+        Y = torch.vstack((Y1, Y2))
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
