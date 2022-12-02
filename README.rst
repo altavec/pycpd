@@ -1,20 +1,10 @@
 #############
-Python-CPD
+PyTorch-CPD
 #############
-
-.. |master_badge| image:: https://github.com/siavashk/pycpd/actions/workflows/build-test.yml/badge.svg?branch=master
-.. |development_badge| image:: https://github.com/siavashk/pycpd/actions/workflows/build-test.yml/badge.svg?branch=development
-
-+-----------------+---------------------+
-| master          | |master_badge|      |
-+-----------------+---------------------+
-| development     | |development_badge| |
-+-----------------+---------------------+
-
 
 `Documentation <https://siavashk.github.io/pycpd/>`_
 
-Pure Numpy Implementation of the Coherent Point Drift Algorithm.
+Pure PyTorch Implementation of the Coherent Point Drift Algorithm, ported from the original NumPy version (siavashk/pycpd).
 
 MIT License.
 
@@ -22,7 +12,7 @@ MIT License.
 Introduction
 *************
 
-This is a pure numpy implementation of the coherent point drift `CPD <https://arxiv.org/abs/0905.2635/>`_ algorithm by Myronenko and Song for use by the python community. It provides three registration methods for point clouds: 1) Scale and rigid registration; 2) Affine registration; and 3) Gaussian regularized non-rigid registration.
+This is a pure PyTorch implementation of the coherent point drift `CPD <https://arxiv.org/abs/0905.2635/>`_ algorithm by Myronenko and Song for use by the python community. It provides three registration methods for point clouds: 1) Scale and rigid registration; 2) Affine registration; and 3) Gaussian regularized non-rigid registration.
 
 The CPD algorithm is a registration method for aligning two point clouds. In this method, the moving point cloud is modelled as a Gaussian Mixture Model (GMM) and the fixed point cloud are treated as observations from the GMM. The optimal transformation parameters maximze the Maximum A Posteriori (MAP) estimation that the observed point cloud is drawn from the GMM.
 
@@ -46,7 +36,7 @@ Clone the repository to a location, referred to as the ``root`` folder. For exam
 
 .. code-block:: bash
 
-  git clone https://github.com/siavashk/pycpd.git $HOME/pycpd
+  git clone https://github.com/altavec/pycpd.git $HOME/pycpd
 
 Install the package:
 
@@ -54,7 +44,7 @@ Install the package:
 
   pip install .
 
-or 
+or
 
 .. code-block:: bash
 
@@ -70,12 +60,12 @@ For running sample registration examples under ``/examples``, you will need ``Ma
 
  pip install matplotlib
 
-or 
+or
 
 .. code-block:: bash
 
   make visualize
-  
+
 *****
 Usage
 *****
@@ -100,19 +90,19 @@ Basic usage includes providing any of the registration methods with 2 arrays tha
 .. code-block:: python
 
   from pycpd import RigidRegistration
-  import numpy as np
+  import torch
 
   # create 2D target points (you can get these from any source you desire)
-  # creating a square w/ 2 additional points. 
-  target = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0], [0, 0.5]])
+  # creating a square w/ 2 additional points.
+  target = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0], [0, 0.5]])
   print('Target Points: \n', target)
 
   # create a translation to apply to the target for testing the registration
-  translation = [1, 0]
+  translation = torch.tensor([1, 0])
 
   # create a fake source by adding a translation to the target.
-  # in a real use, you would load the source points from a file or other source. 
-  # the only requirement is that this array also be 2-dimensional and that the 
+  # in a real use, you would load the source points from a file or other source.
+  # the only requirement is that this array also be 2-dimensional and that the
   # second dimension be the same length as the second dimension of the target array.
   source = target + translation
   print('Source Points: \n', source)
@@ -135,28 +125,28 @@ The affine and deformable registration methods are used in the same way, but pro
 Apply Transform to Another Point Cloud
 #######################################
 Sometimes you may want to apply the transformation parameters to another point cloud. For example, if you have a very large point cloud
-it is sometimes appropriate to randomly sample some of the points for registration and then apply the transformation to the entire point cloud. 
+it is sometimes appropriate to randomly sample some of the points for registration and then apply the transformation to the entire point cloud.
 
-To do this, after fitting the above registration, you would run `reg.transform_point_cloud(Y=points_to_transform)`. This will apply the learned 
+To do this, after fitting the above registration, you would run `reg.transform_point_cloud(Y=points_to_transform)`. This will apply the learned
 registration parameters to the point cloud `points_to_transform` and return the transformed point cloud.
 
 Tuning Registration parameters
 ##############################
 
-For rigid and affine registrations the main parameter you can tweak is `w`. The `w` parameter is an indication of the amount of noise in the 
-point clouds `[0,1]`, by default it is set to `0` assuming no noise, but can be set at any value `0 <= w <1` with higher values indicating more noise. 
+For rigid and affine registrations the main parameter you can tweak is `w`. The `w` parameter is an indication of the amount of noise in the
+point clouds `[0,1]`, by default it is set to `0` assuming no noise, but can be set at any value `0 <= w <1` with higher values indicating more noise.
 
-For deformable registration, you can also tune `alpha`, `beta`, and use `low_rank`. 
+For deformable registration, you can also tune `alpha`, `beta`, and use `low_rank`.
 
-The `alpha` parameter (`lambda` in the original paper) identifies a tradeoff between making points align & regularization of the deformation. 
-A higher value makes the deformation more rigid, a lower value makes the deformation more flexible. 
+The `alpha` parameter (`lambda` in the original paper) identifies a tradeoff between making points align & regularization of the deformation.
+A higher value makes the deformation more rigid, a lower value makes the deformation more flexible.
 
 The `beta` is the width of the Gaussian kernel used to regularize the deformation and thus identifies how far apart points should be
-to move them together (coherently). `beta` depends on the scale/size of your points cloud. Tuning `beta` can be simplified by normalizing 
+to move them together (coherently). `beta` depends on the scale/size of your points cloud. Tuning `beta` can be simplified by normalizing
 the point cloud to a unit sphere distance.
 
 The `low_rank` parameter is a boolean that indicates whether to use a regularized form of the deformation field. This further
-constrains the deformation, while vastly speeding up the optimization. `num_eig` is the number of eigenvalues to use in the low rank 
+constrains the deformation, while vastly speeding up the optimization. `num_eig` is the number of eigenvalues to use in the low rank
 approximation. `num_eig` should be less than the number of points in the point cloud, the lower the smoother the deformation and the
 faster the optimization.
 
@@ -173,10 +163,10 @@ Tests can be run using pytest:
  pip install pytest
  pytest
 
-or 
+or
 
 .. code-block:: bash
-  
+
   make dev
   make test
 
@@ -187,7 +177,7 @@ Documentation
 The documentation can be built using pydoc3
 
 .. code-block:: bash
-  
+
   make dev
   make doc
 
