@@ -1,6 +1,6 @@
 from functools import partial
 import matplotlib.pyplot as plt
-from pycpd import DeformableRegistration
+from pytorchcpd import DeformableRegistration
 import numpy as np
 import time
 

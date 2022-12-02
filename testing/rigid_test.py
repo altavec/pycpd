@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import torch
 from torch.testing import assert_close
-from pycpd import RigidRegistration
+from pytorchcpd import RigidRegistration
 
 
 @pytest.mark.parametrize('device', [torch.device('cpu'), torch.device('cuda')])

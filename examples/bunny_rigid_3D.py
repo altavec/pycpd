@@ -1,7 +1,7 @@
 import argparse
 from functools import partial
 import matplotlib.pyplot as plt
-from pycpd import RigidRegistration
+from pytorchcpd import RigidRegistration
 import numpy as np
 import os
 

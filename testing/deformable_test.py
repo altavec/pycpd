@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import torch
 from torch.testing import assert_close
-from pycpd import gaussian_kernel, DeformableRegistration
+from pytorchcpd import gaussian_kernel, DeformableRegistration
 
 @pytest.mark.parametrize('device', [torch.device('cpu'), torch.device('cuda')])
 def test_2D(device):
