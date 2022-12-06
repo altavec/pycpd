@@ -1,7 +1,8 @@
 from functools import partial
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from pycpd import DeformableRegistration
+from pytorchcpd import DeformableRegistration
+import torch
 import numpy as np
 
 
@@ -17,19 +18,19 @@ def visualize(iteration, error, X, Y, ax):
 
 
 def main():
-    fish_target = np.loadtxt('data/fish_target.txt')
-    X1 = np.zeros((fish_target.shape[0], fish_target.shape[1] + 1))
+    fish_target = torch.from_numpy(np.loadtxt('data/fish_target.txt'))
+    X1 = torch.zeros((fish_target.shape[0], fish_target.shape[1] + 1), dtype=torch.float64)
     X1[:, :-1] = fish_target
-    X2 = np.ones((fish_target.shape[0], fish_target.shape[1] + 1))
+    X2 = torch.ones((fish_target.shape[0], fish_target.shape[1] + 1), dtype=torch.float64)
     X2[:, :-1] = fish_target
-    X = np.vstack((X1, X2))
+    X = torch.vstack((X1, X2))
 
-    fish_source = np.loadtxt('data/fish_source.txt')
-    Y1 = np.zeros((fish_source.shape[0], fish_source.shape[1] + 1))
+    fish_source = torch.from_numpy(np.loadtxt('data/fish_source.txt'))
+    Y1 = torch.zeros((fish_source.shape[0], fish_source.shape[1] + 1), dtype=torch.float64)
     Y1[:, :-1] = fish_source
-    Y2 = np.ones((fish_source.shape[0], fish_source.shape[1] + 1))
+    Y2 = torch.ones((fish_source.shape[0], fish_source.shape[1] + 1), dtype=torch.float64)
     Y2[:, :-1] = fish_source
-    Y = np.vstack((Y1, Y2))
+    Y = torch.vstack((Y1, Y2))
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')

@@ -1,5 +1,5 @@
 from builtins import super
-import numpy as np
+import torch
 from .emregistration import EMRegistration
 from .utility import is_positive_semi_definite
 
@@ -34,8 +34,8 @@ class AffineRegistration(EMRegistration):
         if t is not None and ((t.ndim != 2) or (t.shape[0] != 1) or (t.shape[1] != self.D)):
             raise ValueError(
                 'The translation vector can only be initialized to 1x{} positive semi definite matrices. Instead got: {}.'.format(self.D, t))
-        self.B = np.eye(self.D) if B is None else B
-        self.t = np.atleast_2d(np.zeros((1, self.D))) if t is None else t
+        self.B = torch.eye(self.D, dtype=self.X.dtype, device=self.X.device) if B is None else B
+        self.t = torch.atleast_2d(torch.zeros((1, self.D), dtype=self.X.dtype, device=self.X.device)) if t is None else t
 
         self.YPY = None
         self.X_hat = None
@@ -48,36 +48,35 @@ class AffineRegistration(EMRegistration):
         """
 
         # source and target point cloud means
-        muX = np.divide(np.sum(self.PX, axis=0), self.Np)
-        muY = np.divide(
-            np.sum(np.dot(np.transpose(self.P), self.Y), axis=0), self.Np)
+        muX = torch.divide(torch.sum(self.PX, dim=0), self.Np)
+        muY = torch.divide(
+            torch.sum(torch.matmul(torch.t(self.P), self.Y), dim=0), self.Np)
 
-        self.X_hat = self.X - np.tile(muX, (self.N, 1))
-        Y_hat = self.Y - np.tile(muY, (self.M, 1))
+        self.X_hat = self.X - torch.tile(muX, (self.N, 1))
+        Y_hat = self.Y - torch.tile(muY, (self.M, 1))
 
-        self.A = np.dot(np.transpose(self.X_hat), np.transpose(self.P))
-        self.A = np.dot(self.A, Y_hat)
+        self.A = torch.matmul(torch.t(self.X_hat), torch.t(self.P))
+        self.A = torch.matmul(self.A, Y_hat)
 
-        self.YPY = np.dot(np.transpose(Y_hat), np.diag(self.P1))
-        self.YPY = np.dot(self.YPY, Y_hat)
+        self.YPY = torch.matmul(torch.t(Y_hat), torch.diag(self.P1))
+        self.YPY = torch.matmul(self.YPY, Y_hat)
 
         # Calculate the new estimate of affine parameters using update rules for (B, t)
         # as defined in Fig. 3 of https://arxiv.org/pdf/0905.2635.pdf.
-        self.B = np.linalg.solve(np.transpose(self.YPY), np.transpose(self.A))
-        self.t = np.transpose(
-            muX) - np.dot(np.transpose(self.B), np.transpose(muY))
+        self.B = torch.linalg.solve(torch.t(self.YPY), torch.t(self.A))
+        self.t = torch.t(muX) - torch.matmul(torch.t(self.B), torch.t(muY))
 
     def transform_point_cloud(self, Y=None):
         """
         Update a point cloud using the new estimate of the affine transformation.
-        
+
         Attributes
         ----------
         Y: numpy array, optional
             Array of points to transform - use to predict on new set of points.
             Best for predicting on new points not used to run initial registration.
                 If None, self.Y used.
-        
+
         Returns
         -------
         If Y is None, returns None.
@@ -85,10 +84,10 @@ class AffineRegistration(EMRegistration):
 
         """
         if Y is None:
-            self.TY = np.dot(self.Y, self.B) + np.tile(self.t, (self.M, 1))
+            self.TY = torch.matmul(self.Y, self.B) + torch.tile(self.t, (self.M, 1))
             return
         else:
-            return np.dot(Y, self.B) + np.tile(self.t, (Y.shape[0], 1))
+            return torch.matmul(Y, self.B) + torch.tile(self.t, (Y.shape[0], 1))
 
     def update_variance(self):
         """
@@ -98,13 +97,13 @@ class AffineRegistration(EMRegistration):
         """
         qprev = self.q
 
-        trAB = np.trace(np.dot(self.A, self.B))
-        xPx = np.dot(np.transpose(self.Pt1), np.sum(
-            np.multiply(self.X_hat, self.X_hat), axis=1))
-        trBYPYP = np.trace(np.dot(np.dot(self.B, self.YPY), self.B))
+        trAB = torch.trace(torch.matmul(self.A, self.B))
+        xPx = torch.matmul(torch.t(self.Pt1), torch.sum(
+            torch.multiply(self.X_hat, self.X_hat), dim=1))
+        trBYPYP = torch.trace(torch.matmul(torch.matmul(self.B, self.YPY), self.B))
         self.q = (xPx - 2 * trAB + trBYPYP) / (2 * self.sigma2) + \
-            self.D * self.Np/2 * np.log(self.sigma2)
-        self.diff = np.abs(self.q - qprev)
+            self.D * self.Np/2 * torch.log(self.sigma2)
+        self.diff = torch.abs(self.q - qprev)
 
         self.sigma2 = (xPx - trAB) / (self.Np * self.D)
 

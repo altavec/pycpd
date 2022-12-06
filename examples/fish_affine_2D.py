@@ -1,6 +1,7 @@
 from functools import partial
 import matplotlib.pyplot as plt
-from pycpd import AffineRegistration
+from pytorchcpd import AffineRegistration
+import torch
 import numpy as np
 
 
@@ -16,16 +17,16 @@ def visualize(iteration, error, X, Y, ax):
 
 
 def main(true_affine=True):
-    X = np.loadtxt('data/fish_target.txt')
+    X = torch.from_numpy(np.loadtxt('data/fish_target.txt'))
     if true_affine is True:
-        theta = np.pi / 6.0
-        R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
-        shear = np.array([[1, 0.5], [0, 1]])
-        R = np.dot(R, shear)
-        t = np.array([0.5, 1.0])
-        Y = np.dot(X, R) + t
+        theta = torch.tensor(torch.pi / 6.0, dtype=torch.float64)
+        R = torch.tensor([[torch.cos(theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]], dtype=torch.float64)
+        shear = torch.tensor([[1, 0.5], [0, 1]], dtype=torch.float64)
+        R = torch.matmul(R, shear)
+        t = torch.tensor([0.5, 1.0], dtype=torch.float64)
+        Y = torch.matmul(X, R) + t
     else:
-        Y = np.loadtxt('data/fish_source.txt')
+        Y = torch.from_numpy(np.loadtxt('data/fish_source.txt'))
 
     fig = plt.figure()
     fig.add_axes([0, 0, 1, 1])
