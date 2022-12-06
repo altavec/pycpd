@@ -182,6 +182,7 @@ class EMRegistration(object):
         self.PX = torch.zeros((self.M, self.D), dtype=self.X.dtype, device=self.X.device)
         self.Np = torch.tensor(0, dtype=self.X.dtype, device=self.X.device)
 
+    @torch.inference_mode()
     def register(self, callback=lambda **kwargs: None):
         """
         Perform the EM registration.

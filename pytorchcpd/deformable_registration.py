@@ -92,8 +92,8 @@ class DeformableRegistration(EMRegistration):
             raise ValueError(
                 "Expected a positive value for the width of the coherent Gaussian kerenl. Instead got: {}".format(beta))
 
-        self.alpha = 2 if alpha is None else alpha
-        self.beta = 2 if beta is None else beta
+        self.alpha = torch.tensor(2 if alpha is None else alpha, dtype=self.X.dtype, device=self.X.device)
+        self.beta = torch.tensor(2 if beta is None else beta, dtype=self.X.dtype, device=self.X.device)
         self.W = torch.zeros((self.M, self.D), dtype=self.X.dtype, device=self.X.device)
         self.G = gaussian_kernel(self.Y, self.beta)
         self.low_rank = low_rank
